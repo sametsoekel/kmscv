@@ -61,7 +61,7 @@ kms_cv <- function(data,k = 5,centers = NULL,max_center = 20,alpha = .1,seed = N
         
        group_size <- ideal_sample_size * props
         
-       resample <- purrr::map2_dfr(dplyr::group_split(data_,cls),group_size, ~ dplyr::slice_sample(.x, n = .y))
+       resample <- purrr::map2_dfr(dplyr::group_split(dplyr::group_by_at(data_,'cls')),group_size, ~ dplyr::slice_sample(.x, n = .y))
         
        resample[['fold_id']] <- base::sprintf('Fold%s',i)
         
@@ -92,9 +92,9 @@ kms_cv <- function(data,k = 5,centers = NULL,max_center = 20,alpha = .1,seed = N
     
     join_cols <- base::setdiff(base::colnames(resample_union),'fold_id')
     
-    all_labeled <- rownames_to_column(dplyr::left_join(data,resample_union,by=join_cols),var = 'rn')
+    all_labeled <- tibble::rownames_to_column(dplyr::left_join(data,resample_union,by=join_cols),var = 'rn')
     
-    splitted_folds <- dplyr::group_split(dplyr::group_by(all_labeled,fold_id))
+    splitted_folds <- dplyr::group_split(dplyr::group_by_at(all_labeled,'fold_id'))
     
     indices_list <- base::lapply(splitted_folds,function(x) list(analysis = setdiff(1:base::nrow(data),
                                                                               base::as.integer(x[['rn']])),

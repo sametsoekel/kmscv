@@ -7,5 +7,6 @@ Authors@R:
 Description: K-Means based stratified resampling for k-fold cross validation. 
 License: GPL (>= 3)
 Encoding: UTF-8
+Imports: parsnip,rsample,tibble,purrr,dplyr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0

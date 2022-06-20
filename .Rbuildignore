@@ -1,1 +1,7 @@
 ^LICENSE\.md$
+
+^.*\.ipynb
+
+^.*-checkpoint\.r
+
+^.*-checkpoint\.ipynb
