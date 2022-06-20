@@ -11,9 +11,9 @@ kms_cv <- function(data,k = 5,centers = NULL,max_center = 20,alpha = .1,seed = N
     numeric_col <- base::sapply(data,base::is.numeric)
     all_col <- base::ncol(data)
     
-    if(sum(numeric_col) != sum(all_col)){
+    if(base::sum(numeric_col) != base::sum(all_col)){
         
-        base::warning(base::sprintf('Dropping %s columns, numerics are used only.',sum(all_col) - sum(numeric_col)))
+        base::warning(base::sprintf('Dropping %s columns, numerics are used only.',base::sum(all_col) - base::sum(numeric_col)))
         
         data_ <- data[,numeric_col]
         
@@ -61,9 +61,9 @@ kms_cv <- function(data,k = 5,centers = NULL,max_center = 20,alpha = .1,seed = N
         
        group_size <- ideal_sample_size * props
         
-       resample <- purrr::map2_dfr(dplyr::group_split(data_,cls),group_size, ~ slice_sample(.x, n = .y))
+       resample <- purrr::map2_dfr(dplyr::group_split(data_,cls),group_size, ~ dplyr::slice_sample(.x, n = .y))
         
-       resample[['id']] <- base::sprintf('Fold%s',i)
+       resample[['fold_id']] <- base::sprintf('Fold%s',i)
         
        resamples[[i]] <- resample
         
@@ -78,9 +78,9 @@ kms_cv <- function(data,k = 5,centers = NULL,max_center = 20,alpha = .1,seed = N
         
         to_kick <- data_[1,]
         
-        to_kick[['id']] <- base::sprintf('Fold%s',random_fold)
+        to_kick[['fold_id']] <- base::sprintf('Fold%s',random_fold)
         
-        resamples[[i]] <- parsnip::maybe_data_frame(base::rbind(resamples[[i]],to_kick))
+        resamples[[random_fold]] <- parsnip::maybe_data_frame(base::rbind(resamples[[random_fold]],to_kick))
         
         data_ <- dplyr::anti_join(data_,to_kick,by = base::colnames(data_))
         
@@ -90,13 +90,17 @@ kms_cv <- function(data,k = 5,centers = NULL,max_center = 20,alpha = .1,seed = N
     
     resample_union[['cls']] <- NULL
     
-    join_cols <- base::setdiff(base::colnames(resample_union),'id')
+    join_cols <- base::setdiff(base::colnames(resample_union),'fold_id')
     
-    to_nest <- dplyr::left_join(resample_union,data,by=join_cols)
+    all_labeled <- rownames_to_column(dplyr::left_join(data,resample_union,by=join_cols),var = 'rn')
     
-    order_cols <- c(column_order,'id')
+    splitted_folds <- dplyr::group_split(dplyr::group_by(all_labeled,fold_id))
     
-    to_nest <- dplyr::select(to_nest,dplyr::all_of(order_cols))
+    indices_list <- base::lapply(splitted_folds,function(x) list(analysis = setdiff(1:base::nrow(data),
+                                                                              base::as.integer(x[['rn']])),
+                                                           assessment = base::as.integer(x[['rn']])))
+               
+    indices_splitted <- purrr::map(indices_list, rsample::make_splits, data = data)
     
-    tidyr::nest(dplyr::group_by(to_nest,id),.key = 'splits')
+    rsample::manual_rset(indices_splitted, base::paste0("Fold", 1:k))
 }
