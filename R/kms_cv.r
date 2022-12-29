@@ -59,7 +59,7 @@ kms_cv <- function(data,k = 5,centers = NULL,max_center = 20,alpha = .1,seed = N
         
        props <- current_prop_df[['Prop']]
         
-       group_size <- ideal_sample_size * props
+       group_size <- round(ideal_sample_size * props)
         
        resample <- purrr::map2_dfr(dplyr::group_split(dplyr::group_by_at(data_,'cls')),group_size, ~ dplyr::slice_sample(.x, n = .y))
         
